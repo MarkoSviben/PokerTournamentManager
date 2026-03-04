@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --casino-dark: #0a0f0d;
+  --casino-green: #1a3a2a;
+  --casino-green-light: #2d5a3d;
+  --casino-gold: #d4af37;
+  --casino-gold-light: #f0d060;
+  --casino-red: #c0392b;
+  --casino-felt: #1e4d2b;
+}
+
+body {
+  background-color: var(--casino-dark);
+  color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--casino-dark); }
+::-webkit-scrollbar-thumb { background: var(--casino-green-light); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--casino-gold); }
