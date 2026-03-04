@@ -5,6 +5,13 @@ import { AuthRequest, authMiddleware } from '../middleware/auth';
 const router = Router();
 router.use(authMiddleware);
 
+function nextTicketNumber(tournamentId: string | number | string[]): number {
+  const row = db.prepare(
+    'SELECT MAX(ticket_number) as max_num FROM tickets WHERE tournament_id = ?'
+  ).get(tournamentId) as any;
+  return (row?.max_num || 0) + 1;
+}
+
 // Register player to tournament
 router.post('/:tournamentId/entries', (req: AuthRequest, res: Response) => {
   const { playerId, tableId, seatNumber } = req.body;
@@ -26,9 +33,10 @@ router.post('/:tournamentId/entries', (req: AuthRequest, res: Response) => {
       'INSERT INTO tournament_entries (tournament_id, player_id, table_id, seat_number) VALUES (?, ?, ?, ?)'
     ).run(tournamentId, playerId, tableId || null, seatNumber || null);
 
+    const ticketNum = nextTicketNumber(tournamentId);
     const ticketResult = db.prepare(
-      'INSERT INTO tickets (tournament_id, entry_id, ticket_type, amount) VALUES (?, ?, ?, ?)'
-    ).run(tournamentId, entryResult.lastInsertRowid, 'buyin', t.buyin_amount);
+      'INSERT INTO tickets (tournament_id, entry_id, ticket_type, ticket_number, amount) VALUES (?, ?, ?, ?, ?)'
+    ).run(tournamentId, entryResult.lastInsertRowid, 'buyin', ticketNum, t.buyin_amount);
 
     return { entryId: entryResult.lastInsertRowid, ticketId: ticketResult.lastInsertRowid };
   });
@@ -43,14 +51,16 @@ router.post('/:tournamentId/entries', (req: AuthRequest, res: Response) => {
   res.status(201).json({ entry, ticket });
 });
 
-// Remove entry (before tournament starts)
+// Remove entry
 router.delete('/:tournamentId/entries/:entryId', (req: AuthRequest, res: Response) => {
   const { tournamentId, entryId } = req.params;
   const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(tournamentId) as any;
   if (!t) return res.status(404).json({ error: 'Tournament not found' });
-  if (t.status !== 'registration') return res.status(400).json({ error: 'Can only remove entries during registration' });
+  if (t.status === 'finished') return res.status(400).json({ error: 'Tournament is finished' });
 
   db.prepare('DELETE FROM tickets WHERE entry_id = ?').run(entryId);
+  db.prepare('DELETE FROM rebuys WHERE entry_id = ?').run(entryId);
+  db.prepare('DELETE FROM addons WHERE entry_id = ?').run(entryId);
   db.prepare('DELETE FROM tournament_entries WHERE id = ? AND tournament_id = ?').run(entryId, tournamentId);
   res.json({ success: true });
 });
@@ -86,15 +96,16 @@ router.post('/:tournamentId/entries/:entryId/rebuy', (req: AuthRequest, res: Res
   if (!t || !t.rebuy_enabled) return res.status(400).json({ error: 'Rebuys not enabled' });
 
   const transaction = db.transaction(() => {
-    const rebuyResult = db.prepare(
+    db.prepare(
       'INSERT INTO rebuys (tournament_id, entry_id) VALUES (?, ?)'
     ).run(tournamentId, entryId);
 
+    const ticketNum = nextTicketNumber(tournamentId);
     const ticketResult = db.prepare(
-      'INSERT INTO tickets (tournament_id, entry_id, ticket_type, amount) VALUES (?, ?, ?, ?)'
-    ).run(tournamentId, entryId, 'rebuy', t.rebuy_cost);
+      'INSERT INTO tickets (tournament_id, entry_id, ticket_type, ticket_number, amount) VALUES (?, ?, ?, ?, ?)'
+    ).run(tournamentId, entryId, 'rebuy', ticketNum, t.rebuy_cost);
 
-    return { rebuyId: rebuyResult.lastInsertRowid, ticketId: ticketResult.lastInsertRowid };
+    return { ticketId: ticketResult.lastInsertRowid };
   });
 
   const { ticketId } = transaction();
@@ -110,20 +121,26 @@ router.post('/:tournamentId/entries/:entryId/addon', (req: AuthRequest, res: Res
   if (!t || !t.addon_enabled) return res.status(400).json({ error: 'Add-ons not enabled' });
 
   const transaction = db.transaction(() => {
-    const addonResult = db.prepare(
+    db.prepare(
       'INSERT INTO addons (tournament_id, entry_id) VALUES (?, ?)'
     ).run(tournamentId, entryId);
 
-    const ticketResult = db.prepare(
-      'INSERT INTO tickets (tournament_id, entry_id, ticket_type, amount) VALUES (?, ?, ?, ?)'
-    ).run(tournamentId, entryId, 'addon', t.addon_cost);
+    // Count addons for this player in this tournament
+    const addonCount = db.prepare(
+      'SELECT COUNT(*) as count FROM addons WHERE tournament_id = ? AND entry_id = ?'
+    ).get(tournamentId, entryId) as any;
 
-    return { addonId: addonResult.lastInsertRowid, ticketId: ticketResult.lastInsertRowid };
+    const ticketNum = nextTicketNumber(tournamentId);
+    const ticketResult = db.prepare(
+      'INSERT INTO tickets (tournament_id, entry_id, ticket_type, ticket_number, amount) VALUES (?, ?, ?, ?, ?)'
+    ).run(tournamentId, entryId, 'addon', ticketNum, t.addon_cost);
+
+    return { ticketId: ticketResult.lastInsertRowid, addonNumber: addonCount.count };
   });
 
-  const { ticketId } = transaction();
-  const ticket = db.prepare('SELECT * FROM tickets WHERE id = ?').get(ticketId);
-  res.status(201).json({ ticket });
+  const { ticketId, addonNumber } = transaction();
+  const ticket = db.prepare('SELECT * FROM tickets WHERE id = ?').get(ticketId) as any;
+  res.status(201).json({ ticket: { ...ticket, addon_number: addonNumber } });
 });
 
 export default router;

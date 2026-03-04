@@ -1,10 +1,10 @@
 import db from './database';
-import bcrypt from 'bcryptjs';
 
 export function runMigrations() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS admins (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       display_name TEXT NOT NULL,
@@ -57,6 +57,7 @@ export function runMigrations() {
       current_level INTEGER NOT NULL DEFAULT 1,
       level_started_at TEXT,
       elapsed_seconds_before_current INTEGER NOT NULL DEFAULT 0,
+      level_elapsed_on_pause INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       started_at TEXT,
       finished_at TEXT,
@@ -117,6 +118,7 @@ export function runMigrations() {
       tournament_id INTEGER NOT NULL,
       entry_id INTEGER NOT NULL,
       ticket_type TEXT NOT NULL,
+      ticket_number INTEGER NOT NULL DEFAULT 0,
       amount INTEGER NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
@@ -124,11 +126,25 @@ export function runMigrations() {
     );
   `);
 
-  // Seed default admin if none exist
-  const adminCount = db.prepare('SELECT COUNT(*) as count FROM admins').get() as { count: number };
-  if (adminCount.count === 0) {
-    const hash = bcrypt.hashSync('admin', 10);
-    db.prepare('INSERT INTO admins (username, password_hash, display_name) VALUES (?, ?, ?)').run('admin', hash, 'Admin');
-    console.log('Default admin created: username=admin, password=admin');
+  // Migration: add ticket_number column if missing
+  try {
+    db.prepare("SELECT ticket_number FROM tickets LIMIT 0").get();
+  } catch {
+    db.exec("ALTER TABLE tickets ADD COLUMN ticket_number INTEGER NOT NULL DEFAULT 0");
+  }
+
+  // Migration: add level_elapsed_on_pause column if missing
+  try {
+    db.prepare("SELECT level_elapsed_on_pause FROM tournaments LIMIT 0").get();
+  } catch {
+    db.exec("ALTER TABLE tournaments ADD COLUMN level_elapsed_on_pause INTEGER NOT NULL DEFAULT 0");
+  }
+
+  // Migration: add email column if missing (old schema didn't have it)
+  try {
+    db.prepare("SELECT email FROM admins LIMIT 0").get();
+  } catch {
+    db.exec("ALTER TABLE admins ADD COLUMN email TEXT");
+    db.exec("UPDATE admins SET email = username || '@local' WHERE email IS NULL");
   }
 }

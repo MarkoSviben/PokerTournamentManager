@@ -17,7 +17,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link to="/" className="text-[var(--casino-gold)] font-bold text-xl tracking-wider">
-            xPoker
+            PTM
           </Link>
           <nav className="hidden md:flex gap-1">
             {navItems.map(item => (

@@ -9,6 +9,8 @@ import PlayersPage from './pages/PlayersPage';
 import CreateTournamentPage from './pages/CreateTournamentPage';
 import TournamentLobbyPage from './pages/TournamentLobbyPage';
 import LiveTournamentPage from './pages/LiveTournamentPage';
+import TournamentDisplayPage from './pages/TournamentDisplayPage';
+import TournamentTablesPage from './pages/TournamentTablesPage';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,6 +33,8 @@ function App() {
           <Route path="/tournaments/new" element={<ProtectedRoute><AppLayout><CreateTournamentPage /></AppLayout></ProtectedRoute>} />
           <Route path="/tournaments/:id/lobby" element={<ProtectedRoute><AppLayout><TournamentLobbyPage /></AppLayout></ProtectedRoute>} />
           <Route path="/tournaments/:id/live" element={<ProtectedRoute><AppLayout><LiveTournamentPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/tournaments/:id/display" element={<ProtectedRoute><TournamentDisplayPage /></ProtectedRoute>} />
+          <Route path="/tournaments/:id/tables" element={<ProtectedRoute><TournamentTablesPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

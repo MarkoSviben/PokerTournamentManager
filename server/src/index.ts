@@ -30,5 +30,5 @@ app.use('/api/tournaments', payoutRoutes);
 app.use('/api/tournaments', ticketRoutes);
 
 app.listen(PORT, () => {
-  console.log(`xPoker server running on http://localhost:${PORT}`);
+  console.log(`Poker Tournament Manager server running on http://localhost:${PORT}`);
 });

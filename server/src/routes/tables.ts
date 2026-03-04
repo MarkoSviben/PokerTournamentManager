@@ -115,10 +115,26 @@ router.put('/:tournamentId/tables/:tableId/move', (req: AuthRequest, res: Respon
   const existing = db.prepare(
     'SELECT * FROM tournament_entries WHERE table_id = ? AND seat_number = ? AND status = ?'
   ).get(tableId, seatNumber, 'active') as any;
-  if (existing) return res.status(409).json({ error: 'Seat already occupied' });
+  if (existing && existing.id !== entryId) {
+    return res.status(409).json({ error: 'Seat already occupied' });
+  }
 
   db.prepare('UPDATE tournament_entries SET table_id = ?, seat_number = ? WHERE id = ?')
     .run(tableId, seatNumber, entryId);
+
+  res.json({ success: true });
+});
+
+// Delete a table (unseats all players at that table)
+router.delete('/:tournamentId/tables/:tableId', (req: AuthRequest, res: Response) => {
+  const { tournamentId, tableId } = req.params;
+
+  // Unseat all players at this table
+  db.prepare('UPDATE tournament_entries SET table_id = NULL, seat_number = NULL WHERE table_id = ? AND status = ?')
+    .run(tableId, 'active');
+
+  db.prepare('DELETE FROM tournament_tables WHERE id = ? AND tournament_id = ?')
+    .run(tableId, tournamentId);
 
   res.json({ success: true });
 });

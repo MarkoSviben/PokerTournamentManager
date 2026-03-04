@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface TimerState {
   levelTimeRemaining: number;
@@ -10,7 +10,8 @@ export function useTimer(
   levelStartedAt: string | null,
   elapsedSecondsBefore: number,
   currentLevelDurationMinutes: number,
-  status: string
+  status: string,
+  levelElapsedOnPause: number = 0
 ): TimerState {
   const [now, setNow] = useState(Date.now());
   const intervalRef = useRef<number | null>(null);
@@ -18,6 +19,8 @@ export function useTimer(
   useEffect(() => {
     if (status === 'running') {
       intervalRef.current = window.setInterval(() => setNow(Date.now()), 1000);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -30,6 +33,8 @@ export function useTimer(
   let elapsedInCurrentLevel = 0;
   if (isRunning && levelStartedAt) {
     elapsedInCurrentLevel = Math.floor((now - new Date(levelStartedAt).getTime()) / 1000);
+  } else if (status === 'paused') {
+    elapsedInCurrentLevel = levelElapsedOnPause;
   }
 
   const totalElapsed = elapsedSecondsBefore + elapsedInCurrentLevel;

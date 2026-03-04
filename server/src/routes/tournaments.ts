@@ -126,10 +126,10 @@ router.post('/:id/pause', (req: AuthRequest, res: Response) => {
   const now = Date.now();
   const levelStart = new Date(t.level_started_at).getTime();
   const elapsedInLevel = Math.floor((now - levelStart) / 1000);
-  const totalElapsed = t.elapsed_seconds_before_current + elapsedInLevel;
 
-  db.prepare('UPDATE tournaments SET status = ?, elapsed_seconds_before_current = ?, level_started_at = NULL WHERE id = ?')
-    .run('paused', totalElapsed, t.id);
+  // Save how much of the current level has elapsed, don't change elapsed_seconds_before_current
+  db.prepare('UPDATE tournaments SET status = ?, level_elapsed_on_pause = ?, level_started_at = NULL WHERE id = ?')
+    .run('paused', elapsedInLevel, t.id);
 
   res.json(db.prepare('SELECT * FROM tournaments WHERE id = ?').get(t.id));
 });
@@ -138,9 +138,12 @@ router.post('/:id/resume', (req: AuthRequest, res: Response) => {
   const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id) as any;
   if (!t || t.status !== 'paused') return res.status(400).json({ error: 'Tournament not paused' });
 
-  const now = new Date().toISOString();
-  db.prepare('UPDATE tournaments SET status = ?, level_started_at = ? WHERE id = ?')
-    .run('running', now, t.id);
+  // Backdate level_started_at so the timer continues from where it was paused
+  const pausedElapsed = t.level_elapsed_on_pause || 0;
+  const backdated = new Date(Date.now() - pausedElapsed * 1000).toISOString();
+
+  db.prepare('UPDATE tournaments SET status = ?, level_started_at = ?, level_elapsed_on_pause = 0 WHERE id = ?')
+    .run('running', backdated, t.id);
 
   res.json(db.prepare('SELECT * FROM tournaments WHERE id = ?').get(t.id));
 });
@@ -158,12 +161,19 @@ router.post('/:id/next-level', (req: AuthRequest, res: Response) => {
     return res.status(400).json({ error: 'Already at last level' });
   }
 
-  const currentLevel = levels[t.current_level - 1];
-  const levelDurationSecs = currentLevel.duration_minutes * 60;
-  const newElapsed = t.elapsed_seconds_before_current + levelDurationSecs;
+  // Calculate actual elapsed time in current level
+  let elapsedInLevel: number;
+  if (t.status === 'running' && t.level_started_at) {
+    elapsedInLevel = Math.floor((Date.now() - new Date(t.level_started_at).getTime()) / 1000);
+  } else {
+    // Paused - use saved value
+    elapsedInLevel = t.level_elapsed_on_pause || 0;
+  }
+
+  const newElapsed = t.elapsed_seconds_before_current + elapsedInLevel;
   const now = new Date().toISOString();
 
-  db.prepare('UPDATE tournaments SET current_level = ?, elapsed_seconds_before_current = ?, level_started_at = ? WHERE id = ?')
+  db.prepare('UPDATE tournaments SET current_level = ?, elapsed_seconds_before_current = ?, level_started_at = ?, level_elapsed_on_pause = 0 WHERE id = ?')
     .run(t.current_level + 1, newElapsed, t.status === 'running' ? now : null, t.id);
 
   res.json(db.prepare('SELECT * FROM tournaments WHERE id = ?').get(t.id));

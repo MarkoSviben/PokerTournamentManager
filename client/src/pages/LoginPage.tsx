@@ -6,6 +6,7 @@ export default function LoginPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -19,7 +20,7 @@ export default function LoginPage() {
 
     try {
       if (isRegister) {
-        await register(username, password, displayName);
+        await register(email, username, password, displayName);
       } else {
         await login(username, password);
       }
@@ -35,14 +36,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--casino-dark)] px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-[var(--casino-gold)] tracking-wider mb-2">
-            xPoker
+          <h1 className="text-4xl font-bold text-[var(--casino-gold)] tracking-wider mb-2">
+            Poker Tournament
           </h1>
-          <p className="text-gray-500 text-sm">Tournament Director</p>
+          <p className="text-[var(--casino-gold)]/70 text-lg">Manager</p>
         </div>
 
         <div className="bg-[var(--casino-green)] rounded-xl p-8 border border-[var(--casino-gold)]/20 shadow-2xl">
-          <h2 className="text-xl font-semibold text-white mb-6">
+          <h2 className="text-xl font-semibold text-white mb-6 text-center">
             {isRegister ? 'Create Account' : 'Sign In'}
           </h2>
 
@@ -53,6 +54,19 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full bg-[var(--casino-dark)] border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:border-[var(--casino-gold)] focus:outline-none transition-colors"
+                  required
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm text-gray-400 mb-1">Username</label>
               <input
