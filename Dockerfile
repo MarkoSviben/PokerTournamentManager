@@ -17,13 +17,14 @@ COPY server/ ./server/
 RUN cd server && npm run build
 
 # Create data directory for SQLite
-RUN mkdir -p /app/server/data
+RUN mkdir -p /data
 
 WORKDIR /app/server
 
 ENV NODE_ENV=production
 ENV PORT=3001
 ENV DATA_DIR=/data
+ENV HOST=0.0.0.0
 
 EXPOSE 3001
 

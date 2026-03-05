@@ -30,6 +30,9 @@ app.use('/api/tournaments', tableRoutes);
 app.use('/api/tournaments', payoutRoutes);
 app.use('/api/tournaments', ticketRoutes);
 
+// Health check (no auth)
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
 // Serve frontend in production
 const clientDist = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientDist));
@@ -37,6 +40,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Poker Tournament Manager server running on http://localhost:${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(Number(PORT), HOST, () => {
+  console.log(`Poker Tournament Manager server running on http://${HOST}:${PORT}`);
 });

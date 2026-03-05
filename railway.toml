@@ -3,7 +3,7 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "node dist/index.js"
-healthcheckPath = "/api/auth/me"
+healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
 
 [[mounts]]
