@@ -62,8 +62,6 @@ export default function TournamentTablesPage() {
     return () => clearInterval(interval);
   }, [load]);
 
-  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
   const eliminate = async (entry: Entry) => {
     await api.post(`/tournaments/${id}/entries/${entry.id}/eliminate`);
     setSelectedEntry(null);
