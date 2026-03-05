@@ -10,6 +10,7 @@ export default function Header() {
     { path: '/blind-structures', label: 'Blinds' },
     { path: '/players', label: 'Players' },
     { path: '/tournaments/new', label: 'New Tournament' },
+    ...(admin?.id === 1 ? [{ path: '/admin', label: 'Admin' }] : []),
   ];
 
   return (

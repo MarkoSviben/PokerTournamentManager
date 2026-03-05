@@ -10,6 +10,7 @@ import entryRoutes from './routes/entries';
 import tableRoutes from './routes/tables';
 import payoutRoutes from './routes/payouts';
 import ticketRoutes from './routes/tickets';
+import adminRoutes from './routes/admin';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +30,7 @@ app.use('/api/tournaments', entryRoutes);
 app.use('/api/tournaments', tableRoutes);
 app.use('/api/tournaments', payoutRoutes);
 app.use('/api/tournaments', ticketRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check (no auth)
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));

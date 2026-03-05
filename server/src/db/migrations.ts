@@ -156,4 +156,14 @@ export function runMigrations() {
     db.exec("ALTER TABLE admins ADD COLUMN email TEXT");
     db.exec("UPDATE admins SET email = username || '@local' WHERE email IS NULL");
   }
+
+  // Seed super admin if no admins exist
+  const adminCount = db.prepare('SELECT COUNT(*) as count FROM admins').get() as { count: number };
+  if (adminCount.count === 0) {
+    const bcrypt = require('bcryptjs');
+    const hash = bcrypt.hashSync('Admin3451', 10);
+    db.prepare('INSERT INTO admins (email, username, password_hash, display_name) VALUES (?, ?, ?, ?)')
+      .run('marko@poker.local', 'marko1701', hash, 'Marko');
+    console.log('Super admin created: username=marko1701');
+  }
 }

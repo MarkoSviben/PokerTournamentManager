@@ -11,6 +11,7 @@ import TournamentLobbyPage from './pages/TournamentLobbyPage';
 import LiveTournamentPage from './pages/LiveTournamentPage';
 import TournamentDisplayPage from './pages/TournamentDisplayPage';
 import TournamentTablesPage from './pages/TournamentTablesPage';
+import AdminPage from './pages/AdminPage';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route path="/tournaments/:id/live" element={<ProtectedRoute><AppLayout><LiveTournamentPage /></AppLayout></ProtectedRoute>} />
           <Route path="/tournaments/:id/display" element={<ProtectedRoute><TournamentDisplayPage /></ProtectedRoute>} />
           <Route path="/tournaments/:id/tables" element={<ProtectedRoute><TournamentTablesPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AppLayout><AdminPage /></AppLayout></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
