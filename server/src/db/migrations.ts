@@ -33,8 +33,10 @@ export function runMigrations() {
 
     CREATE TABLE IF NOT EXISTS players (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_id INTEGER NOT NULL,
       name TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (admin_id) REFERENCES admins(id)
     );
 
     CREATE TABLE IF NOT EXISTS tournaments (
@@ -138,6 +140,13 @@ export function runMigrations() {
     db.prepare("SELECT level_elapsed_on_pause FROM tournaments LIMIT 0").get();
   } catch {
     db.exec("ALTER TABLE tournaments ADD COLUMN level_elapsed_on_pause INTEGER NOT NULL DEFAULT 0");
+  }
+
+  // Migration: add admin_id to players if missing
+  try {
+    db.prepare("SELECT admin_id FROM players LIMIT 0").get();
+  } catch {
+    db.exec("ALTER TABLE players ADD COLUMN admin_id INTEGER NOT NULL DEFAULT 1");
   }
 
   // Migration: add email column if missing (old schema didn't have it)

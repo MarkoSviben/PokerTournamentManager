@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { runMigrations } from './db/migrations';
 import authRoutes from './routes/auth';
 import blindStructureRoutes from './routes/blindStructures';
@@ -28,6 +29,13 @@ app.use('/api/tournaments', entryRoutes);
 app.use('/api/tournaments', tableRoutes);
 app.use('/api/tournaments', payoutRoutes);
 app.use('/api/tournaments', ticketRoutes);
+
+// Serve frontend in production
+const clientDist = path.join(__dirname, '../../client/dist');
+app.use(express.static(clientDist));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`Poker Tournament Manager server running on http://localhost:${PORT}`);

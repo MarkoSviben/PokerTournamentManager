@@ -1,0 +1,11 @@
+[build]
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "node dist/index.js"
+healthcheckPath = "/api/auth/me"
+restartPolicyType = "ON_FAILURE"
+
+[[mounts]]
+source = "data"
+mountPath = "/data"

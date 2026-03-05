@@ -1,7 +1,11 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
-const dbPath = path.join(__dirname, '../../data/poker.db');
+const dataDir = process.env.DATA_DIR || path.join(__dirname, '../../data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+const dbPath = path.join(dataDir, 'poker.db');
 const db = new Database(dbPath);
 
 db.pragma('journal_mode = WAL');
